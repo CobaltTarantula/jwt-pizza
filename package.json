@@ -30,6 +30,19 @@
     "preline": "^2.1.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^6.22.3"
-  }
+    "react-router-dom": "^6.30.3"
+  },
+  "directories": {
+    "test": "tests"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CobaltTarantula/jwt-pizza.git"
+  },
+  "keywords": [],
+  "author": "",
+  "bugs": {
+    "url": "https://github.com/CobaltTarantula/jwt-pizza/issues"
+  },
+  "homepage": "https://github.com/CobaltTarantula/jwt-pizza#readme"
 }
