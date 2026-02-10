@@ -117,8 +117,25 @@ async function basicInit(page: Page) {
     await route.fulfill({ json: menuRes });
   });
 
+  // Get a franchisee's franchise
+  await page.route(/\/api\/franchise\/\d+$/, async (route) => {
+    const userFranchiseRes = [
+      {
+        id: 2,
+        name: "pizzaPocket",
+        admins: [{ id: 4, name: "pizza franchisee", email: "f@jwt.com" }],
+        stores: mockStores,
+      },
+    ];
+
+    await route.fulfill({ json: userFranchiseRes });
+  });
+
   // Standard franchises and stores
   await page.route(/\/api\/franchise(\?.*)?$/, async (route) => {
+    if (route.request().method() !== 'GET') {
+      return route.fallback();
+    }
 
     const franchiseRes = {
       franchises: mockFranchises
@@ -198,20 +215,6 @@ async function basicInit(page: Page) {
       status: 200,
       json: { message: "store deleted" },
     });
-  });
-
-  // Get a franchisee's franchise
-  await page.route(/\/api\/franchise\/\d+$/, async (route) => {
-    const userFranchiseRes = [
-      {
-        id: 2,
-        name: "pizzaPocket",
-        admins: [{ id: 4, name: "pizza franchisee", email: "f@jwt.com" }],
-        stores: mockStores,
-      },
-    ];
-
-    await route.fulfill({ json: userFranchiseRes });
   });
 
   // Order a pizza.
