@@ -1,7 +1,7 @@
 import { test, expect } from 'playwright-test-coverage';
 
-test('updateUser', async ({ page }) => {
-    const email = `user${Math.floor(Math.random() * 10000)}@jwt.com`;
+test('updateUser', async ({ page }) => { // only works with backend running rn -> when pushing either have it running
+    const email = `user${Math.floor(Math.random() * 10000)}@jwt.com`; // or change this up to mock
     await page.goto('/');
     await page.getByRole('link', { name: 'Register' }).click();
     await page.getByRole('textbox', { name: 'Full name' }).fill('pizza diner');
@@ -41,3 +41,11 @@ test('updateUser', async ({ page }) => {
 
     await expect(page.getByRole('main')).toContainText('pizza dinerx');
 });
+
+/*
+There are still other tests that we need to write
+in order for us to be fully comfortable with the new update user functionality. 
+This includes changing the password and email address, 
+and changing user information using different roles. 
+Go ahead and write those tests now and commit those changes also.
+*/
