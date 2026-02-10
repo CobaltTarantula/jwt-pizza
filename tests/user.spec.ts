@@ -42,6 +42,17 @@
 //     await expect(page.getByRole('main')).toContainText('pizza dinerx');
 // });
 
+/* 
+The above test does not mock out the backend. 
+When you are using TDD for full stack development 
+it is helpful to drive your development across the whole stack. 
+However, when you push the frontend test to your CI pipeline 
+it will fail because there is no backend available when running 
+under GitHub Actions. You can either solve this by either 
+mocking out the backend or by actually starting up a backend 
+when your frontend tests run.
+*/
+
 /*
 There are still other tests that we need to write
 in order for us to be fully comfortable with the new update user functionality. 
