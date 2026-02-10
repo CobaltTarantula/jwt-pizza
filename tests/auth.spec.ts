@@ -273,6 +273,17 @@ async function basicInit(page: Page) {
   await page.goto('/');
 }
 
+test('not found', async ({ page }) => {
+  await basicInit(page);
+
+  await page.goto('/fake');
+
+  await expect(page.getByText('Oops')).toBeVisible();
+  await expect(
+    page.getByText('It looks like we have dropped')
+  ).toBeVisible();
+});
+
 test('about', async ({ page }) =>{
   await basicInit(page);
   await page.getByRole('link', { name: 'About' }).click();
