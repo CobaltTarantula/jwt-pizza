@@ -47,11 +47,27 @@ export async function basicInit(page: Page) {
         { id: 3, name: "PizzaCorp", stores: [{ id: 7, name: "Spanish Fork" }] },
         { id: 4, name: "topSpot", stores: [] },
     ];
+    
+    // get user
+    await page.route('*/**/api/user/me', async (route) => {
+        if (route.request().method() !== 'GET') {
+            return route.fallback();
+        }
 
+        if (!loggedInUser) {
+            return route.fulfill({ status: 401 });
+        }
+
+        await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            json: loggedInUser,
+        });
+    });
+
+    // update user
     await page.route(/\/api\/user\/\d+$/, async (route) => {
-        // get user
         if (route.request().method() !== 'PUT') return route.fallback();
-        // update user
         const body = route.request().postDataJSON();
         if (!loggedInUser) return route.fulfill({ status: 401 });
 
@@ -226,60 +242,57 @@ export async function basicInit(page: Page) {
         });
     });
 
-    // Order a pizza.
-    await page.route('*/**/api/order', async (route) => {
-        const orderReq = route.request().postDataJSON();
-        const orderRes = {
-        order: { ...orderReq, id: 23 },
-        jwt: 'eyJpYXQ',
-        };
-        expect(route.request().method()).toBe('POST');
-        await route.fulfill({ json: orderRes });
-    });
-
-    // Get a person's orders
     await page.route("*/**/api/order", async (route) => {
-        if (route.request().method() !== "GET") {
-        return route.fallback();
+        const method = route.request().method();
+        // order a pizza
+        if (method === "POST") {
+            const orderReq = route.request().postDataJSON();
+            const orderRes = {
+                order: { ...orderReq, id: 23 },
+                jwt: 'eyJpYXQ',
+            };
+            return route.fulfill({ json: orderRes });
+        }
+        // Get a person's orders
+        if (method === "GET") {
+                    const orderRes = {
+                        dinerId: 2,
+                        orders: [
+                            {
+                            id: 166,
+                            franchiseId: 2,
+                            storeId: 4,
+                            date: "2025-09-12T22:14:00.000Z",
+                            items: [
+                                {
+                                id: 782,
+                                menuId: 1,
+                                description: "Veggie",
+                                price: 0.0038,
+                                },
+                            ],
+                            },
+                            {
+                            id: 167,
+                            franchiseId: 2,
+                            storeId: 3,
+                            date: "2025-09-12T22:16:33.000Z",
+                            items: [
+                                {
+                                id: 783,
+                                menuId: 1,
+                                description: "Veggie",
+                                price: 0.0038,
+                                },
+                            ],
+                            },
+                        ],
+                        page: 1,
+                    };
+            return route.fulfill({json: orderRes});
         }
 
-        const orderRes = {
-        dinerId: 2,
-        orders: [
-            {
-            id: 166,
-            franchiseId: 2,
-            storeId: 4,
-            date: "2025-09-12T22:14:00.000Z",
-            items: [
-                {
-                id: 782,
-                menuId: 1,
-                description: "Veggie",
-                price: 0.0038,
-                },
-            ],
-            },
-            {
-            id: 167,
-            franchiseId: 2,
-            storeId: 3,
-            date: "2025-09-12T22:16:33.000Z",
-            items: [
-                {
-                id: 783,
-                menuId: 1,
-                description: "Veggie",
-                price: 0.0038,
-                },
-            ],
-            },
-        ],
-        page: 1,
-        };
-
-        expect(route.request().method()).toBe("GET");
-        await route.fulfill({ json: orderRes });
+        return route.fallback();
     });
 
     await page.goto('/');
