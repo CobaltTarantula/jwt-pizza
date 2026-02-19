@@ -1,7 +1,8 @@
 // only works with backend running rn -> when pushing either have it running
 // or change this up to mock
 
-// import { test, expect } from 'playwright-test-coverage';
+import { test, expect } from 'playwright-test-coverage';
+import { basicInit } from './basicInit'
 
 // test('updateUser', async ({ page }) => { 
 //     const email = `user${Math.floor(Math.random() * 10000)}@jwt.com`;
@@ -45,16 +46,108 @@
 //     await expect(page.getByRole('main')).toContainText('pizza dinerx');
 // });
 
-/* 
-The above test does not mock out the backend. 
-When you are using TDD for full stack development 
-it is helpful to drive your development across the whole stack. 
-However, when you push the frontend test to your CI pipeline 
-it will fail because there is no backend available when running 
-under GitHub Actions. You can either solve this by either 
-mocking out the backend or by actually starting up a backend 
-when your frontend tests run.
-*/
+test('update user name', async ({ page }) => {
+    await basicInit(page);
+
+    // login
+    await page.getByRole('link', { name: 'Login' }).click();
+    await page.getByRole('textbox', { name: 'Email address' }).fill('d@jwt.com');
+    await page.getByRole('textbox', { name: 'Password' }).fill('diner');
+    await page.getByRole('button', { name: 'Login' }).click();
+
+    // open profile
+    await page.getByRole('link', { name: 'pd' }).click();
+    await expect(page.getByRole('main')).toContainText('pizza diner');
+
+    // open edit dialog
+    await page.getByRole('button', { name: 'Edit' }).click();
+
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toBeVisible();
+
+    // edit name
+    await dialog.getByRole('textbox').first().fill('pizza diner x');
+
+    await dialog.getByRole('button', { name: 'Update' }).click();
+    await expect(dialog).toBeHidden();
+
+    // UI updates
+    await expect(page.getByRole('main')).toContainText('pizza diner x');
+});
+
+test('update user email', async ({ page }) => {
+    await basicInit(page);
+
+    // login
+    await page.getByRole('link', { name: 'Login' }).click();
+    await page.getByRole('textbox', { name: 'Email address' }).fill('d@jwt.com');
+    await page.getByRole('textbox', { name: 'Password' }).fill('diner');
+    await page.getByRole('button', { name: 'Login' }).click();
+
+    // open profile
+    await page.getByRole('link', { name: 'pd' }).click();
+    await expect(page.getByRole('main')).toContainText('d@jwt.com');
+
+    // open edit dialog
+    await page.getByRole('button', { name: 'Edit' }).click();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toBeVisible();
+
+    // fill email using input id
+    await dialog.locator('input[type="email"]').fill('new@jwt.com');
+    await dialog.getByRole('button', { name: 'Update' }).click();
+
+    // wait for overlay to close
+    await expect(dialog).toBeHidden();
+
+    // validate main page reflects new email
+    await expect(page.getByRole('main')).toContainText('new@jwt.com');
+});
+
+test('update user password', async ({ page }) => {
+    await basicInit(page);
+
+    // login
+    await page.getByRole('link', { name: 'Login' }).click();
+    await page.getByRole('textbox', { name: 'Email address' }).fill('d@jwt.com');
+    await page.getByRole('textbox', { name: 'Password' }).fill('diner');
+    await page.getByRole('button', { name: 'Login' }).click();
+
+    // open profile
+    await page.getByRole('link', { name: 'pd' }).click();
+    await expect(page.getByRole('main')).toContainText('d@jwt.com');
+
+    // open edit dialog
+    await page.getByRole('button', { name: 'Edit' }).click();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toBeVisible();
+
+    // fill password using input id
+    await dialog.locator('#password').fill('newPassword123');
+    await dialog.getByRole('button', { name: 'Update' }).click();
+
+    // wait for overlay to close
+    await expect(dialog).toBeHidden();
+
+    // validate main page still shows email (password is hidden)
+    await expect(page.getByRole('main')).toContainText('d@jwt.com');
+});
+
+test('diner cannot change roles', async ({ page }) => {
+    await basicInit(page);
+
+    await page.getByRole('link', { name: 'Login' }).click();
+    await page.getByRole('textbox', { name: 'Email address' }).fill('d@jwt.com');
+    await page.getByRole('textbox', { name: 'Password' }).fill('diner');
+    await page.getByRole('button', { name: 'Login' }).click();
+
+    await page.getByRole('link', { name: 'pd' }).click();
+    await page.getByRole('button', { name: 'Edit' }).click();
+
+    await expect(
+        page.getByRole('combobox', { name: /role/i })
+    ).toHaveCount(0);
+});
 
 /*
 There are still other tests that we need to write
