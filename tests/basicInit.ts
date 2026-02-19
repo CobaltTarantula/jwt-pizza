@@ -48,6 +48,24 @@ export async function basicInit(page: Page) {
         { id: 4, name: "topSpot", stores: [] },
     ];
 
+    await page.route(/\/api\/user\/\d+$/, async (route) => {
+        // get user
+        if (route.request().method() !== 'PUT') return route.fallback();
+        // update user
+        const body = route.request().postDataJSON();
+        if (!loggedInUser) return route.fulfill({ status: 401 });
+
+        // Merge updates
+        loggedInUser = { ...loggedInUser, ...body };
+
+        // Return in the format frontend expects
+        await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            json: { user: loggedInUser, token: 'abcdef' },
+        });
+    });
+
     await page.route("*/**/api/auth", async (route) => {
         const method = route.request().method();
 
@@ -84,23 +102,6 @@ export async function basicInit(page: Page) {
         }
 
         return route.fallback();
-    });
-
-    await page.route(/\/api\/user\/\d+$/, async (route) => {
-        if (route.request().method() !== 'PUT') return route.fallback();
-
-        const body = route.request().postDataJSON();
-        if (!loggedInUser) return route.fulfill({ status: 401 });
-
-        // Merge updates
-        loggedInUser = { ...loggedInUser, ...body };
-
-        // Return in the format frontend expects
-        await route.fulfill({
-            status: 200,
-            contentType: 'application/json',
-            json: { user: loggedInUser, token: 'abcdef' },
-        });
     });
 
     // A standard menu
