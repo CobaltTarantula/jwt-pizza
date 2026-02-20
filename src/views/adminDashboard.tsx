@@ -16,12 +16,24 @@ export default function AdminDashboard(props: Props) {
   const [franchiseList, setFranchiseList] = React.useState<FranchiseList>({ franchises: [], more: false });
   const [franchisePage, setFranchisePage] = React.useState(0);
   const filterFranchiseRef = React.useRef<HTMLInputElement>(null);
+  const [users, setUsers] = React.useState<{ users: User[]; more: boolean }>({ users: [], more: false });
+  const [userPage, setUserPage] = React.useState(0);
+  const filterUserRef = React.useRef<HTMLInputElement>(null);
 
   React.useEffect(() => {
     (async () => {
       setFranchiseList(await pizzaService.getFranchises(franchisePage, 3, '*'));
     })();
   }, [props.user, franchisePage]);
+
+  React.useEffect(() => {
+    if (Role.isRole(props.user, Role.Admin)) {
+      (async () => {
+        debugger;
+        setUsers(await pizzaService.listUsers(userPage, 10, '*'));
+      })();
+    }
+  }, [props.user, userPage]);
 
   function createFranchise() {
     navigate('/admin-dashboard/create-franchise');
@@ -39,6 +51,22 @@ export default function AdminDashboard(props: Props) {
     setFranchiseList(await pizzaService.getFranchises(franchisePage, 10, `*${filterFranchiseRef.current?.value}*`));
   }
 
+  async function deleteUser(userId: string | undefined) {
+    if (!userId) return;
+    await pizzaService.deleteUser(userId);
+    setUsers(prev => ({
+      ...prev,
+      users: prev.users.filter(u => u.id !== userId),
+    }));
+  }
+
+  async function filterUsers() {
+    setUserPage(0);
+    const filter = filterUserRef.current?.value ?? '';
+    const data = await pizzaService.listUsers(0, 10, `*${filter}*`);
+    setUsers(data);
+  }
+
   let response = <NotFound />;
   if (Role.isRole(props.user, Role.Admin)) {
     response = (
@@ -50,7 +78,7 @@ export default function AdminDashboard(props: Props) {
               <div className="-m-1.5 overflow-x-auto">
                 <div className="p-1.5 min-w-full inline-block align-middle">
                   <div className="overflow-hidden">
-                    <table className="min-w-full divide-y divide-gray-200">
+                    <table aria-label="Franchises" className="min-w-full divide-y divide-gray-200">
                       <thead className="uppercase text-neutral-100 bg-slate-400 border-b-2 border-gray-500">
                         <tr>
                           {['Franchise', 'Franchisee', 'Store', 'Revenue', 'Action'].map((header) => (
@@ -123,6 +151,52 @@ export default function AdminDashboard(props: Props) {
         <div>
           <Button className="w-36 text-xs sm:text-sm sm:w-64" title="Add Franchise" onPress={createFranchise} />
         </div>
+
+        <h3 className="text-neutral-100 text-xl mt-8">Users</h3>
+        <table aria-label="Users" className="min-w-full divide-y divide-gray-200 bg-neutral-100">
+          <thead className="uppercase bg-slate-400 text-neutral-100">
+            <tr>
+              {['Name', 'Email', 'Role', 'Action'].map(h => (
+                <th key={h} className="px-6 py-3 text-xs text-center">{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {users.users.map((user, i) => (
+              <tr key={i}>
+                <td className="px-2">{user.name}</td>
+                <td className="px-2">{user.email}</td>
+                <td className="px-2">{user.roles?.map(r => r.role).join(', ')}</td>
+                <td className="px-6 text-end">
+                  <button
+                    onClick={() => deleteUser(user.id)}
+                    className="px-2 py-1 border border-orange-400 text-orange-400 rounded-lg"
+                  >
+                    <TrashIcon /> Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colSpan={4}>
+                <input ref={filterUserRef} placeholder="Filter users" className="px-2 py-1 border rounded-lg" />
+                <button onClick={filterUsers} className="ml-2 px-2 py-1 border border-orange-400 text-orange-400">Search</button>
+              </td>
+            </tr>
+            <tr>
+              <td colSpan={4} className="text-end">
+                <button className="w-12 p-1 text-sm font-semibold rounded-lg border border-transparent bg-white text-grey border-grey m-1 hover:bg-orange-200 disabled:bg-neutral-300 " onClick={() => setUserPage(userPage - 1)} disabled={userPage <= 0}>
+                  «
+                </button>
+                <button className="w-12 p-1 text-sm font-semibold rounded-lg border border-transparent bg-white text-grey border-grey m-1 hover:bg-orange-200 disabled:bg-neutral-300" onClick={() => setUserPage(userPage + 1)} disabled={!users.more}>
+                  »
+                </button>
+              </td>
+            </tr>
+          </tfoot>
+        </table>
       </View>
     );
   }

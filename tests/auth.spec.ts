@@ -158,7 +158,7 @@ test('admin open then close franchise', async ({ page }) => {
   await page.getByRole('link', { name: 'Admin' }).click();
 
   // create franchise
-  await expect(page.locator("tfoot")).toContainText("Submit");
+  await expect(page.getByRole("button", { name: "Add Franchise" })).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Add Franchise" }),
   ).toBeVisible();
@@ -179,15 +179,15 @@ test('admin open then close franchise', async ({ page }) => {
 
   // validate franchise
   await page.getByRole("button", { name: "Create" }).click();
-  await expect(page.getByRole("table")).toContainText(randomFranchiseName);
-  await expect(page.getByRole("table")).toContainText("常用名字");
+  await expect(page.getByRole("table", {name: "Franchises"})).toContainText(randomFranchiseName);
+  await expect(page.getByRole("table", {name: "Franchises"})).toContainText("常用名字");
 
   await expect(
     page
       .getByRole("row", { name: `${randomFranchiseName} 常用名字 Close` })
       .getByRole("button"),
   ).toBeVisible();
-  await expect(page.getByRole("table")).toContainText("Close");
+  await expect(page.getByRole("table", {name: "Franchises"})).toContainText("Close");
   await page
     .getByRole("row", { name: `${randomFranchiseName} 常用名字 Close` })
     .getByRole("button")
@@ -198,7 +198,68 @@ test('admin open then close franchise', async ({ page }) => {
     `Are you sure you want to close the ${randomFranchiseName} franchise? This will close all associated stores and cannot be restored. All outstanding revenue will not be refunded.`,
   );
   await page.getByRole("button", { name: "Close" }).click();
-  await expect(page.getByRole("table")).not.toContainText(randomFranchiseName);
+  await expect(page.getByRole("table", {name: "Franchises"})).not.toContainText(randomFranchiseName);
+});
+
+test('admin delete user', async ({ page }) => {
+  await basicInit(page);
+
+  // login as admin
+  await page.getByRole('link', { name: 'Login' }).click();
+  await page.getByRole('textbox', { name: 'Email address' }).fill('a@jwt.com');
+  await page.getByRole('textbox', { name: 'Password' }).fill('admin');
+  await page.getByRole('button', { name: 'Login' }).click();
+  await page.getByRole('link', { name: 'Admin' }).click();
+
+  // Delete first user
+  const userRow = page.getByRole('row', { name: /.+@test\.com/ });
+  await userRow.getByRole('button', { name: 'Delete' }).click();
+
+  // confirm alert
+  page.on('dialog', async dialog => { await dialog.accept(); });
+
+  // Expect row no longer exists
+  await expect(userRow).not.toBeVisible();
+});
+
+test('admin filter users', async ({ page }) => {
+  await basicInit(page);
+  // login as admin
+  await page.getByRole('link', { name: 'Login' }).click();
+  await page.getByRole('textbox', { name: 'Email address' }).click();
+  await page.getByRole('textbox', { name: 'Email address' }).fill('a@jwt.com');
+  await page.getByRole('textbox', { name: 'Password' }).click();
+  await page.getByRole('textbox', { name: 'Password' }).fill('admin');
+  await page.getByRole('button', { name: 'Login' }).click();
+  await page.getByRole('link', { name: 'Admin' }).click();
+
+  const input = page.getByPlaceholder('Filter users');
+  await input.fill('alice');
+  await page.getByRole('button', { name: 'Search' }).click();
+
+  // Expect only filtered user rows
+  await expect(page.locator('table:has-text("Users") tbody')).toContainText('alice');
+});
+
+test('admin next then previous page of users', async ({ page }) => {
+  await basicInit(page);
+  await page.getByRole('link', { name: 'Login' }).click();
+  await page.getByRole('textbox', { name: 'Email address' }).fill('a@jwt.com');
+  await page.getByRole('textbox', { name: 'Password' }).fill('admin');
+  await page.getByRole('button', { name: 'Login' }).click();
+  await page.getByRole('link', { name: 'Admin' }).click();
+
+  const usersTable = page.getByRole('table', { name: /Users/i });
+  const nextButton = usersTable.getByRole('button', { name: '»' });
+  const prevButton = page.getByRole('button', { name: '«' });
+
+  // Click next page
+  await nextButton.click();
+  await expect(nextButton).toBeEnabled();
+
+  // Click previous page
+  await prevButton.click();
+  await expect(prevButton).toBeDisabled();
 });
 
 test('login franchisee', async ({ page }) =>{
