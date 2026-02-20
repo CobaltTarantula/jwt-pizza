@@ -37,6 +37,12 @@ export async function basicInit(page: Page) {
         ...mockUsers,
         { id: '7', name: 'Alice', email: 'alice@test.com', password: 'alice', roles: [{ role: Role.Diner }] },
         { id: '8', name: 'Bob', email: 'bob@test.com', password: 'bob', roles: [{ role: Role.Diner }] },
+        { id: '9', name: 'Jim', email: 'jim@test.com', password: 'jim', roles: [{ role: Role.Diner }] },
+        { id: '10', name: 'Liza', email: 'liza@test.com', password: 'liza', roles: [{ role: Role.Diner }] },
+        { id: '11', name: 'Ellie', email: 'ellie@test.com', password: 'ellie', roles: [{ role: Role.Diner }] },
+        { id: '12', name: 'Mito', email: 'chondria@test.com', password: 'powerhouse', roles: [{ role: Role.Diner }] },
+        { id: '13', name: 'Cat', email: 'black@test.com', password: 'unlucky', roles: [{ role: Role.Diner }] },
+        { id: '14', name: 'Double', email: 'seven@test.com', password: 'doubleseven', roles: [{ role: Role.Diner }] },
     ];
 
     // --- Stores ---
@@ -95,16 +101,24 @@ export async function basicInit(page: Page) {
         const limit = parseInt(url.searchParams.get('limit') || '10');
         const filter = url.searchParams.get('filter')?.replace(/\*/g, '').toLowerCase() || '';
 
-        // Filter and paginate users
+        // Filter users
         const filteredUsers = mockUsers.filter(u =>
             u.name?.toLowerCase().includes(filter) ||
             u.email?.toLowerCase().includes(filter)
         );
-        const pagedUsers = filteredUsers.slice(pageParam * limit, (pageParam + 1) * limit);
-        const more = (pageParam + 1) * limit < filteredUsers.length;
 
-        // Always return users regardless of loggedInUser
-        await route.fulfill({ status: 200, contentType: 'application/json', json: { users: pagedUsers, more } });
+        // Slice current page
+        const pagedUsers = filteredUsers.slice(pageParam * limit, (pageParam + 1) * limit);
+
+        // Check if **next page has any users**
+        const nextPageUsers = filteredUsers.slice((pageParam + 1) * limit, (pageParam + 2) * limit);
+        const more = nextPageUsers.length > 0;
+
+        await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            json: { users: pagedUsers, more }
+        });
     });
 
     // --- AUTH ---

@@ -211,54 +211,88 @@ test('admin delete user', async ({ page }) => {
   await page.getByRole('button', { name: 'Login' }).click();
   await page.getByRole('link', { name: 'Admin' }).click();
 
-  // Delete first user
-  const userRow = page.getByRole('row', { name: /.+@test\.com/ });
+  const usersTable = page.getByRole('table', { name: /users/i });
+  const userRow = usersTable.getByRole('row', { name: /alice@test\.com/i });
+
+  page.once('dialog', async dialog => {
+    await dialog.accept();
+  });
+
   await userRow.getByRole('button', { name: 'Delete' }).click();
 
-  // confirm alert
-  page.on('dialog', async dialog => { await dialog.accept(); });
-
-  // Expect row no longer exists
-  await expect(userRow).not.toBeVisible();
+  await expect(
+    usersTable.getByRole('row', { name: /alice@test\.com/i })
+  ).toHaveCount(0);
 });
 
 test('admin filter users', async ({ page }) => {
   await basicInit(page);
+
   // login as admin
   await page.getByRole('link', { name: 'Login' }).click();
-  await page.getByRole('textbox', { name: 'Email address' }).click();
   await page.getByRole('textbox', { name: 'Email address' }).fill('a@jwt.com');
-  await page.getByRole('textbox', { name: 'Password' }).click();
   await page.getByRole('textbox', { name: 'Password' }).fill('admin');
   await page.getByRole('button', { name: 'Login' }).click();
   await page.getByRole('link', { name: 'Admin' }).click();
 
-  const input = page.getByPlaceholder('Filter users');
-  await input.fill('alice');
+  const usersTable = page.getByRole('table', { name: /users/i });
+  const tbody = usersTable.locator('tbody');
+
+  // Filter for Alice
+  await page.getByPlaceholder('Filter users').fill('alice@test.com');
   await page.getByRole('button', { name: 'Search' }).click();
 
-  // Expect only filtered user rows
-  await expect(page.locator('table:has-text("Users") tbody')).toContainText('alice');
+  // Assert Alice row exists (tbody only)
+  const aliceRow = tbody.getByRole('row', {
+    name: /alice@test\.com/i,
+  });
+
+  await expect(aliceRow).toHaveCount(1);
+  await expect(aliceRow).toBeVisible();
+
+  // Assert Bob does NOT appear
+  await expect(
+    tbody.getByRole('row', { name: /bob@test\.com/i })
+  ).toHaveCount(0);
 });
 
 test('admin next then previous page of users', async ({ page }) => {
   await basicInit(page);
+
+  // Login as admin
   await page.getByRole('link', { name: 'Login' }).click();
   await page.getByRole('textbox', { name: 'Email address' }).fill('a@jwt.com');
   await page.getByRole('textbox', { name: 'Password' }).fill('admin');
   await page.getByRole('button', { name: 'Login' }).click();
   await page.getByRole('link', { name: 'Admin' }).click();
 
-  const usersTable = page.getByRole('table', { name: /Users/i });
+  const usersTable = page.getByRole('table', { name: /users/i });
   const nextButton = usersTable.getByRole('button', { name: '»' });
-  const prevButton = page.getByRole('button', { name: '«' });
+  const prevButton = usersTable.getByRole('button', { name: '«' });
 
-  // Click next page
-  await nextButton.click();
+  // Wait for the first user row to be visible
+  await expect(usersTable.locator('tbody tr').first()).toBeVisible();
+
+  // Initial state
+  await expect(prevButton).toBeDisabled();
   await expect(nextButton).toBeEnabled();
 
-  // Click previous page
+  // Go to next page
+  await nextButton.click();
+
+  // Wait for table to update for next page
+  await expect(usersTable.locator('tbody tr').first()).toBeVisible();
+
+  // After moving forward
+  await expect(prevButton).toBeEnabled();
+
+  // Go back
   await prevButton.click();
+
+  // Wait for table to update for previous page
+  await expect(usersTable.locator('tbody tr').first()).toBeVisible();
+
+  // Back at start
   await expect(prevButton).toBeDisabled();
 });
 

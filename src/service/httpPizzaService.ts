@@ -79,7 +79,7 @@ class HttpPizzaService implements PizzaService {
   // in HttpPizzaService
   async listUsers(page: number = 0, limit: number = 10, filter: string = '*'): Promise<{ users: User[]; more: boolean }> {
     try {
-      const response = await this.callEndpoint(`/api/admin/users?page=${page}&limit=${limit}&filter=${encodeURIComponent(filter)}`);
+      const response = await this.callEndpoint(`/api/user?page=${page}&limit=${limit}&filter=${encodeURIComponent(filter)}`);
       // Assume API returns { users: User[], total: number }
       const more = (page + 1) * limit < (response.total ?? 0);
       return { users: response.users ?? [], more };
@@ -91,7 +91,7 @@ class HttpPizzaService implements PizzaService {
 
   async deleteUser(userId: string): Promise<void> {
     if (!userId) throw new Error('User ID is required to delete a user.');
-    await this.callEndpoint(`/api/admin/users/${userId}`, 'DELETE');
+    await this.callEndpoint(`/api/user/${userId}`, 'DELETE');
   }
 
   async getMenu(): Promise<Menu> {

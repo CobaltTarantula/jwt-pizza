@@ -18,7 +18,10 @@ export default function AdminDashboard(props: Props) {
   const filterFranchiseRef = React.useRef<HTMLInputElement>(null);
   const [users, setUsers] = React.useState<{ users: User[]; more: boolean }>({ users: [], more: false });
   const [userPage, setUserPage] = React.useState(0);
+  const [userFilter, setUserFilter] = React.useState('*');
   const filterUserRef = React.useRef<HTMLInputElement>(null);
+  const hasNextUserPage = users.users.length === 10 || users.more; // If we fetched a full page, or API says more
+  const hasPrevUserPage = userPage > 0;
 
   React.useEffect(() => {
     (async () => {
@@ -29,11 +32,10 @@ export default function AdminDashboard(props: Props) {
   React.useEffect(() => {
     if (Role.isRole(props.user, Role.Admin)) {
       (async () => {
-        debugger;
-        setUsers(await pizzaService.listUsers(userPage, 10, '*'));
+        setUsers(await pizzaService.listUsers(userPage, 10, userFilter));
       })();
     }
-  }, [props.user, userPage]);
+  }, [props.user, userPage, userFilter]);
 
   function createFranchise() {
     navigate('/admin-dashboard/create-franchise');
@@ -61,10 +63,9 @@ export default function AdminDashboard(props: Props) {
   }
 
   async function filterUsers() {
+    const filter = `*${filterUserRef.current?.value ?? ''}*`;
     setUserPage(0);
-    const filter = filterUserRef.current?.value ?? '';
-    const data = await pizzaService.listUsers(0, 10, `*${filter}*`);
-    setUsers(data);
+    setUserFilter(filter);
   }
 
   let response = <NotFound />;
@@ -187,10 +188,18 @@ export default function AdminDashboard(props: Props) {
             </tr>
             <tr>
               <td colSpan={4} className="text-end">
-                <button className="w-12 p-1 text-sm font-semibold rounded-lg border border-transparent bg-white text-grey border-grey m-1 hover:bg-orange-200 disabled:bg-neutral-300 " onClick={() => setUserPage(userPage - 1)} disabled={userPage <= 0}>
+                <button
+                  className="w-12 p-1 text-sm font-semibold rounded-lg border border-transparent bg-white text-grey border-grey m-1 hover:bg-orange-200 disabled:bg-neutral-300"
+                  onClick={() => setUserPage(userPage - 1)}
+                  disabled={!hasPrevUserPage}
+                >
                   «
                 </button>
-                <button className="w-12 p-1 text-sm font-semibold rounded-lg border border-transparent bg-white text-grey border-grey m-1 hover:bg-orange-200 disabled:bg-neutral-300" onClick={() => setUserPage(userPage + 1)} disabled={!users.more}>
+                <button
+                  className="w-12 p-1 text-sm font-semibold rounded-lg border border-transparent bg-white text-grey border-grey m-1 hover:bg-orange-200 disabled:bg-neutral-300"
+                  onClick={() => setUserPage(userPage + 1)}
+                  disabled={!hasNextUserPage}
+                >
                   »
                 </button>
               </td>
